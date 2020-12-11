@@ -75,9 +75,15 @@ class Parser {
     }
 
     private Expr unary() {
-        if (match(BANG, MINUS)) {
+        if (match(BANG, MINUS, PLUS, SLASH, STAR)) {
             Token operator = previous();
             Expr right = unary();
+
+            if (operator.type == PLUS || operator.type == SLASH || operator.type == STAR) {
+                // Maybe throw?
+                error(operator, "Unary '" + operator.lexeme + "' expressions are not supported.");
+            }
+
             return new Expr.Unary(operator, right);
         }
 
