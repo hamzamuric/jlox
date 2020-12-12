@@ -53,7 +53,15 @@ public class Interpreter implements Expr.Visitor<Object> {
                     return (String)left + (String)right;
                 }
 
-                throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
+                if (left instanceof String) {
+                    return (String)left + stringify(right);
+                }
+
+                if (right instanceof String) {
+                    return stringify(left) + (String)right;
+                }
+
+                throw new RuntimeError(expr.operator, "Operands must be two numbers or either one string.");
         }
 
         // Unreachable.
