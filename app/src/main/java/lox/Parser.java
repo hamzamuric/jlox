@@ -10,9 +10,11 @@ class Parser {
 
     private final List<Token> tokens;
     private int current = 0;
+    private final boolean repl;
 
-    Parser(List<Token> tokens) {
+    Parser(List<Token> tokens, boolean repl) {
         this.tokens = tokens;
+        this.repl = repl;
     }
 
     List<Stmt> parse() {
@@ -30,7 +32,9 @@ class Parser {
 
             return statement();
         } catch (ParseError error) {
-            synchronize();
+            if (!repl) {
+                synchronize();
+            }
             return null;
         }
     }
@@ -66,7 +70,9 @@ class Parser {
 
     private Stmt expressionStatement() {
         Expr expr = expression();
-        consume(SEMICOLON, "Expect ';' after expression.");
+        if (!repl) {
+            consume(SEMICOLON, "Expect ';' after expression.");
+        }
         return new Stmt.Expression(expr);
     }
 
