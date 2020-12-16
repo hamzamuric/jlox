@@ -44,12 +44,16 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Object visitVariableExpr(Expr.Variable expr) {
+        Object value = environment.get(expr.name);
+        if (value instanceof Undefined) {
+            throw new RuntimeError(expr.name, "Accessing undefined value.");
+        }
         return environment.get(expr.name);
     }
 
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {
-        Object value = null;
+        Object value = Undefined.getInstance();
         if (stmt.initializer != null) {
             value = evaluate(stmt.initializer);
         }
