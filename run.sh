@@ -1,1 +1,1 @@
-java -cp app/build/classes/java/main lox.Lox
+java -cp app/build/classes/java/main lox.Lox $@
