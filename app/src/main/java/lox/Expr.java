@@ -11,6 +11,7 @@ abstract class Expr {
 		R visitLiteralExpr(Literal expr);
 		R visitLogicalExpr(Logical expr);
 		R visitUnaryExpr(Unary expr);
+		R visitLambdaExpr(Lambda expr);
 		R visitVariableExpr(Variable expr);
 	}
 
@@ -111,6 +112,20 @@ abstract class Expr {
 		@Override
 		<R> R accept(Visitor<R> visitor) {
 			return visitor.visitUnaryExpr(this);
+		}
+	}
+
+	static class Lambda extends Expr {
+		final List<Token> params;
+		final List<Stmt> body;
+		Lambda(List<Token> params, List<Stmt> body) {
+			this.params = params;
+			this.body = body;
+		}
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitLambdaExpr(this);
 		}
 	}
 

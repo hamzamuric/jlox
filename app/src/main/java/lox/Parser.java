@@ -27,7 +27,10 @@ class Parser {
 
     private Stmt declaration() {
         try {
-            if (match(FUN)) return function("function");
+            if (peek().type == FUN && peekNext().type != LEFT_PAREN) {
+                advance();
+                return function("function");
+            }
             if (match(VAR)) return varDeclaration();
 
             return statement();
@@ -154,19 +157,8 @@ class Parser {
         Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
         consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
         List<Token> parameters = new ArrayList<>();
-        if (!check(RIGHT_PAREN)) {
-            do {
-                if (parameters.size() >= 255) {
-                    error(peek(), "Can't have more than 255 parameters.");
-                }
+        List<Stmt> body = finishFunction(parameters, kind);
 
-                parameters.add(consume(IDENTIFIER, "Expect parameter name."));
-            } while (match(COMMA));
-        }
-        consume(RIGHT_PAREN, "Expect ')' after parameters.");
-
-        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
-        List<Stmt> body = block();
         return new Stmt.Function(name, parameters, body);
     }
 
@@ -182,7 +174,7 @@ class Parser {
     }
 
     private Expr assignment() {
-        Expr expr = or();
+        Expr expr = lambda();
 
         if (match(EQUAL)) {
             Token equals = previous();
@@ -197,6 +189,34 @@ class Parser {
         }
 
         return expr;
+    }
+
+    private Expr lambda() {
+        if (match(FUN)) {
+            consume(LEFT_PAREN, "Expect '(' after 'fun' keyword of a lambda expression.");
+            List<Token> parameters = new ArrayList<>();
+            List<Stmt> body = finishFunction(parameters, "lambda");
+
+            return new Expr.Lambda(parameters, body);
+        }
+
+        return or();
+    }
+
+    private List<Stmt> finishFunction(List<Token> parameters, String kind) {
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (parameters.size() >= 255) {
+                    error(peek(), "Can't have more than 255 parameters.");
+                }
+
+                parameters.add(consume(IDENTIFIER, "Expect parameter name."));
+            } while (match(COMMA));
+        }
+        consume(RIGHT_PAREN, "Expect ')' after parameters.");
+
+        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        return block();
     }
 
     private Expr or() {
@@ -365,6 +385,13 @@ class Parser {
 
     private Token peek() {
         return tokens.get(current);
+    }
+
+    private Token peekNext() {
+        if (current + 1 < tokens.size()) {
+            return tokens.get(current + 1);
+        }
+        return tokens.get(tokens.size() - 1);
     }
 
     private Token previous() {
