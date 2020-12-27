@@ -162,6 +162,22 @@ class Parser {
         return new Stmt.Function(name, parameters, body);
     }
 
+    private List<Stmt> finishFunction(List<Token> parameters, String kind) {
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (parameters.size() >= 255) {
+                    error(peek(), "Can't have more than 255 parameters.");
+                }
+
+                parameters.add(consume(IDENTIFIER, "Expect parameter name."));
+            } while (match(COMMA));
+        }
+        consume(RIGHT_PAREN, "Expect ')' after parameters.");
+
+        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        return block();
+    }
+
     private List<Stmt> block() {
         List<Stmt> statements = new ArrayList<>();
 
@@ -174,7 +190,7 @@ class Parser {
     }
 
     private Expr assignment() {
-        Expr expr = lambda();
+        Expr expr = or();
 
         if (match(EQUAL)) {
             Token equals = previous();
@@ -191,33 +207,7 @@ class Parser {
         return expr;
     }
 
-    private Expr lambda() {
-        if (match(FUN)) {
-            consume(LEFT_PAREN, "Expect '(' after 'fun' keyword of a lambda expression.");
-            List<Token> parameters = new ArrayList<>();
-            List<Stmt> body = finishFunction(parameters, "lambda");
 
-            return new Expr.Lambda(parameters, body);
-        }
-
-        return or();
-    }
-
-    private List<Stmt> finishFunction(List<Token> parameters, String kind) {
-        if (!check(RIGHT_PAREN)) {
-            do {
-                if (parameters.size() >= 255) {
-                    error(peek(), "Can't have more than 255 parameters.");
-                }
-
-                parameters.add(consume(IDENTIFIER, "Expect parameter name."));
-            } while (match(COMMA));
-        }
-        consume(RIGHT_PAREN, "Expect ')' after parameters.");
-
-        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
-        return block();
-    }
 
     private Expr or() {
         Expr expr = and();
@@ -348,6 +338,13 @@ class Parser {
             Expr expr = expression();
             consume(RIGHT_PAREN, "Expect ')' after expression.");
             return new Expr.Grouping(expr);
+        }
+
+        if (match(FUN)) {
+            consume(LEFT_PAREN, "Expect '(' after 'fun' keyword of a lambda expression.");
+            List<Token> parameters = new ArrayList<>();
+            List<Stmt> body = finishFunction(parameters, "lambda");
+            return new Expr.Lambda(parameters, body);
         }
 
         throw error(peek(), "Expected expression.");
