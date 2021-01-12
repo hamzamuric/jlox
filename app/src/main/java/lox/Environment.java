@@ -1,11 +1,13 @@
 package lox;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Environment {
     final Environment enclosing;
-    private final Map<String, Object> values = new HashMap<>();
+    private Map<String, Object> values;
+    private ArrayList<Object> indexedValues;
 
     Environment() {
         enclosing = null;
@@ -16,11 +18,21 @@ public class Environment {
     }
 
     void define(String name, Object value) {
+        if (values == null) {
+            values = new HashMap<>();
+        }
         values.put(name, value);
     }
 
+    void defineIndexed(Object value) {
+        if (indexedValues == null) {
+            indexedValues = new ArrayList<>();
+        }
+        indexedValues.add(value);
+    }
+
     void assign(Token name, Object value) {
-        if (values.containsKey(name.lexeme)) {
+        if (values != null && values.containsKey(name.lexeme)) {
             values.put(name.lexeme, value);
             return;
         }
@@ -33,12 +45,16 @@ public class Environment {
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
-    void assignAt(int distance, Token name, Object value) {
-        ancestor(distance).values.put(name.lexeme, value);
+    void assignAt(VariableLocation location, Object value) {
+        Environment targetEnvironment = ancestor(location.depth);
+        if (targetEnvironment.indexedValues == null) {
+            targetEnvironment.indexedValues = new ArrayList<>();
+        }
+        targetEnvironment.indexedValues.add(location.index, value);
     }
 
     Object get(Token name) {
-        if (values.containsKey(name.lexeme)) {
+        if (values != null && values.containsKey(name.lexeme)) {
             return values.get(name.lexeme);
         }
 
@@ -47,8 +63,8 @@ public class Environment {
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
-    Object getAt(int distance, String name) {
-        return ancestor(distance).values.get(name);
+    Object getAt(VariableLocation location) {
+        return ancestor(location.depth).indexedValues.get(location.index);
     }
 
     Environment ancestor(int distance) {

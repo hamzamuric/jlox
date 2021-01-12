@@ -8,7 +8,7 @@ import java.util.Map;
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     final Environment globals = new Environment();
     private Environment environment = globals;
-    private final Map<Expr, Integer> locals = new HashMap<>();
+    private final Map<Expr, VariableLocation> locals = new HashMap<>();
 
     Interpreter() {
         globals.define("clock", new LoxCallable() {
@@ -47,8 +47,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         stmt.accept(this);
     }
 
-    void resolve(Expr expr, int depth) {
-        locals.put(expr, depth);
+    void resolve(Expr expr, int depth, int index) {
+        VariableLocation location = new VariableLocation(depth, index);
+        locals.put(expr, location);
     }
 
     void executeBlock(List<Stmt> statements, Environment environment) {
@@ -76,9 +77,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     private Object lookUpVariable(Token name, Expr expr) {
-        Integer distance = locals.get(expr);
-        if (distance != null) {
-            return environment.getAt(distance, name.lexeme);
+        VariableLocation location = locals.get(expr);
+        if (location != null) {
+            return environment.getAt(location);
         } else {
             return globals.get(name);
         }
@@ -91,7 +92,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             value = evaluate(stmt.initializer);
         }
 
-        environment.define(stmt.name.lexeme, value);
+        // Are we in local scope?
+        if (environment != globals) {
+            environment.defineIndexed(value);
+        } else {
+            globals.define(stmt.name.lexeme, value);
+        }
         return null;
     }
 
@@ -99,9 +105,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Object visitAssignExpr(Expr.Assign expr) {
         Object value = evaluate(expr.value);
 
-        Integer distance = locals.get(expr);
-        if (distance != null) {
-            environment.assignAt(distance, expr.name, value);
+        VariableLocation location = locals.get(expr);
+        if (location != null) {
+            environment.assignAt(location, value);
         } else {
             globals.assign(expr.name, value);
         }
@@ -118,7 +124,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
         LoxFunction function = new LoxFunction(stmt, environment);
-        environment.define(stmt.name.lexeme, function);
+        // Are we in local environment?
+        if (environment != globals) {
+            environment.defineIndexed(function);
+        } else {
+            globals.define(stmt.name.lexeme, function);
+        }
         return null;
     }
 
