@@ -10,8 +10,14 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         NONE,
         FUNCTION
     }
+    private enum VariableStatus {
+        DECLARED,
+        DEFINED,
+        USED
+    }
     private final Interpreter interpreter;
-    private final Stack<Map<String, Boolean>> scopes = new Stack<>();
+    private final Stack<Map<String, VariableStatus>> scopes = new Stack<>();
+    private final Map<String, Token> declarations = new HashMap<>();
     private FunctionType currentFunction = FunctionType.NONE;
 
     Resolver(Interpreter interpreter) {
@@ -136,7 +142,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitVariableExpr(Expr.Variable expr) {
-        if (!scopes.isEmpty() && scopes.peek().get(expr.name.lexeme) == Boolean.FALSE) {
+        if (!scopes.isEmpty() && scopes.peek().get(expr.name.lexeme) == VariableStatus.DECLARED) {
             Lox.error(expr.name, "Can't read local variable in its own initializer.");
         }
 
@@ -149,7 +155,13 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     private void endScope() {
-        scopes.pop();
+        Map<String, VariableStatus> scope = scopes.pop();
+        for (Map.Entry<String, VariableStatus> variable : scope.entrySet()) {
+            if (variable.getValue() != VariableStatus.USED) {
+                Token declaration = declarations.get(variable.getKey());
+                Lox.error(declaration, "Unused variable '" + variable.getKey() + "'");
+            }
+        }
     }
 
     private void declare(Token name) {
@@ -159,12 +171,13 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             Lox.error(name, "Already variable with this name in this scope.");
         }
 
-        scope.put(name.lexeme, false);
+        scope.put(name.lexeme, VariableStatus.DECLARED);
+        declarations.put(name.lexeme, name);
     }
 
     private void define(Token name) {
         if (scopes.isEmpty()) return;
-        scopes.peek().put(name.lexeme, true);
+        scopes.peek().put(name.lexeme, VariableStatus.DEFINED);
     }
 
     void resolve(List<Stmt> statements) {
@@ -199,6 +212,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private void resolveLocal(Expr expr, Token name) {
         for (int i = scopes.size() - 1; i >= 0; i--) {
             if (scopes.get(i).containsKey(name.lexeme)) {
+                scopes.get(i).put(name.lexeme, VariableStatus.USED);
                 interpreter.resolve(expr, scopes.size() - 1 - i);
                 return;
             }
