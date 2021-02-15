@@ -42,6 +42,11 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         define(stmt.name);
 
         beginScope();
+
+        for (Stmt.Function staticMethod : stmt.staticMethods) {
+            resolveFunction(staticMethod, FunctionType.METHOD);
+        }
+
         scopes.peek().put("this", true);
 
         for (Stmt.Function method : stmt.methods) {
@@ -49,7 +54,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             if (method.name.lexeme.equals("init")) {
                 declaration = FunctionType.INITIALIZER;
             }
-            resolveFunction(method, FunctionType.METHOD);
+            resolveFunction(method, declaration);
         }
 
         endScope();

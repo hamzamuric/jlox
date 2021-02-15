@@ -3,11 +3,12 @@ package lox;
 import java.util.List;
 import java.util.Map;
 
-public class LoxClass implements LoxCallable {
+public class LoxClass extends LoxInstance implements LoxCallable {
     final String name;
     private final Map<String, LoxFunction> methods;
 
-    LoxClass(String name, Map<String, LoxFunction> methods) {
+    LoxClass(String name, Map<String, LoxFunction> methods, LoxClass meta) {
+        super(meta);
         this.name = name;
         this.methods = methods;
     }
@@ -17,7 +18,7 @@ public class LoxClass implements LoxCallable {
             return methods.get(name);
         }
 
-        return null;
+        return super.klass.findMethod(name);
     }
 
     @Override
