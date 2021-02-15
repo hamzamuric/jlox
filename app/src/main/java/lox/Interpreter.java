@@ -88,7 +88,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         LoxClass klassMeta = new LoxClass(stmt.name.lexeme + "$meta", staticMethods, null);
         LoxClass klass = new LoxClass(stmt.name.lexeme, methods, klassMeta);
         environment.assign(stmt.name, klass);
-        // TODO: mozda treba ovde da stavim u environment i metaklasu
         return null;
     }
 
