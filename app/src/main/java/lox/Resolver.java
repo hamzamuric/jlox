@@ -49,7 +49,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             if (method.name.lexeme.equals("init")) {
                 declaration = FunctionType.INITIALIZER;
             }
-            resolveFunction(method, FunctionType.METHOD);
+            resolveFunction(method, declaration);
         }
 
         endScope();
