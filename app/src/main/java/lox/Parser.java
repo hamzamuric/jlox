@@ -121,13 +121,20 @@ class Parser {
         consume(LEFT_BRACE, "Expect '{' before class body.");
 
         List<Stmt.Function> methods = new ArrayList<>();
+        List<Stmt.Getter> getters = new ArrayList<>();
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
-            methods.add(function("method"));
+            consume(IDENTIFIER, "Expect function or getter name.");
+            Token nextToken = peek();
+            if (nextToken.type == LEFT_BRACE) {
+                getters.add(getter());
+            } else if (nextToken.type == LEFT_PAREN) {
+                methods.add(function("method"));
+            }
         }
 
         consume(RIGHT_BRACE, "Expect '}' after class body.");
 
-        return new Stmt.Class(name, methods);
+        return new Stmt.Class(name, methods, getters);
     }
 
     private Stmt varDeclaration() {
@@ -165,8 +172,20 @@ class Parser {
         return new Stmt.Expression(expr);
     }
 
+    private Stmt.Getter getter() {
+        Token name = previous();
+        consume(LEFT_BRACE, "Expect '{' before getter body.");
+        List<Stmt> body = block();
+        return new Stmt.Getter(name, body);
+    }
+
     private Stmt.Function function(String kind) {
-        Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+        Token name = null;
+        if (kind.equals("method")) {
+            name = previous();
+        } else {
+            consume(IDENTIFIER, "Expect " + kind + " name.");
+        }
         consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
         List<Token> parameters = new ArrayList<>();
         if (!check(RIGHT_PAREN)) {

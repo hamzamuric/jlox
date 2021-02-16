@@ -44,6 +44,10 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         beginScope();
         scopes.peek().put("this", true);
 
+        for (Stmt.Getter getter : stmt.getters) {
+            resolveGetter(getter);
+        }
+
         for (Stmt.Function method : stmt.methods) {
             FunctionType declaration = FunctionType.METHOD;
             if (method.name.lexeme.equals("init")) {
@@ -70,6 +74,15 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         define(stmt.name);
 
         resolveFunction(stmt, FunctionType.FUNCTION);
+        return null;
+    }
+
+    @Override
+    public Void visitGetterStmt(Stmt.Getter stmt) {
+        declare(stmt.name);
+        define(stmt.name);
+
+        resolveGetter(stmt);
         return null;
     }
 
@@ -237,6 +250,15 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     private void resolve(Expr expr) {
         expr.accept(this);
+    }
+
+    private void resolveGetter(Stmt.Getter getter) {
+        FunctionType enclosingFunction = currentFunction;
+        currentFunction = FunctionType.METHOD;
+        beginScope();
+        resolve(getter.body);
+        endScope();
+        currentFunction = enclosingFunction;
     }
 
     private void resolveFunction(Stmt.Function function, FunctionType type) {
