@@ -1,5 +1,6 @@
 package lox;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -7,12 +8,14 @@ public class LoxClass implements LoxCallable {
     final String name;
     final LoxClass superclass;
     private final Map<String, LoxFunction> methods;
+    private final Map<String, LoxFunction> extensions = new HashMap<>();
 
     LoxClass(String name, LoxClass superclass, Map<String, LoxFunction> methods) {
         this.name = name;
         this.superclass = superclass;
         this.methods = methods;
     }
+
 
     LoxFunction findMethod(String name) {
         if (methods.containsKey(name)) {
@@ -23,7 +26,15 @@ public class LoxClass implements LoxCallable {
             return superclass.findMethod(name);
         }
 
+        if (extensions.containsKey(name)) {
+            return extensions.get(name);
+        }
+
         return null;
+    }
+
+    void addExtension(String name, LoxFunction function) {
+        extensions.put(name, function);
     }
 
     @Override

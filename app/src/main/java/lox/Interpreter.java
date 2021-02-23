@@ -150,7 +150,17 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
         LoxFunction function = new LoxFunction(stmt, environment, false);
-        environment.define(stmt.name.lexeme, function);
+        // for extension functions.
+        if (stmt.klass == null) {
+            environment.define(stmt.name.lexeme, function);
+        } else {
+            Object klass = evaluate(stmt.klass);
+            if (!(klass instanceof LoxClass)) {
+                throw new RuntimeError(stmt.klass.name, "Extensions are allowed only on class types");
+            }
+            LoxClass loxClass = (LoxClass)klass;
+            loxClass.addExtension(stmt.name.lexeme, function);
+        }
         return null;
     }
 

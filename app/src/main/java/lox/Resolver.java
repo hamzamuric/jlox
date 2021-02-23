@@ -10,7 +10,8 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         NONE,
         FUNCTION,
         INITIALIZER,
-        METHOD
+        METHOD,
+        EXTENSION
     }
     private enum ClassType {
         NONE,
@@ -86,7 +87,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         declare(stmt.name);
         define(stmt.name);
 
-        resolveFunction(stmt, FunctionType.FUNCTION);
+        resolveFunction(stmt, stmt.klass == null ? FunctionType.FUNCTION : FunctionType.EXTENSION);
         return null;
     }
 
@@ -268,18 +269,31 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     private void resolveFunction(Stmt.Function function, FunctionType type) {
+        ClassType enclosingClass = currentClass;
         FunctionType enclosingFunction = currentFunction;
         currentFunction = type;
 
         beginScope();
+
+        if (type == FunctionType.EXTENSION) {
+            currentClass = ClassType.CLASS;
+            scopes.peek().put("this", true);
+            beginScope();
+        }
         for (Token param : function.params) {
             declare(param);
             define(param);
         }
         resolve(function.body);
+
+        if (type == FunctionType.EXTENSION) {
+            endScope();
+        }
+
         endScope();
 
         currentFunction = enclosingFunction;
+        currentClass = enclosingClass;
     }
 
     private void resolveLocal(Expr expr, Token name) {

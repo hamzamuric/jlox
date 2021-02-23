@@ -59,10 +59,12 @@ abstract class Stmt {
 		final Token name;
 		final List<Token> params;
 		final List<Stmt> body;
-		Function(Token name, List<Token> params, List<Stmt> body) {
+		final Expr.Variable klass;
+		Function(Token name, List<Token> params, List<Stmt> body, Expr.Variable klass) {
 			this.name = name;
 			this.params = params;
 			this.body = body;
+			this.klass = klass;
 		}
 
 		@Override

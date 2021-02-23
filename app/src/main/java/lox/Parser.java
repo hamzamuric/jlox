@@ -129,7 +129,13 @@ class Parser {
 
         List<Stmt.Function> methods = new ArrayList<>();
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
-            methods.add(function("method"));
+            Stmt.Function method = function("method");
+            boolean isExtension = method.klass != null;
+            if (!isExtension) {
+                methods.add(method);
+            } else {
+                error(method.name, "Extension function not allowed inside a class.");
+            }
         }
 
         consume(RIGHT_BRACE, "Expect '}' after class body.");
@@ -174,6 +180,10 @@ class Parser {
 
     private Stmt.Function function(String kind) {
         Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+        Token extension = null; // for extension functions.
+        if (match(DOT)) {
+            extension = consume(IDENTIFIER, "Expect extension function name after '.'.");
+        }
         consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
         List<Token> parameters = new ArrayList<>();
         if (!check(RIGHT_PAREN)) {
@@ -189,7 +199,11 @@ class Parser {
 
         consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
         List<Stmt> body = block();
-        return new Stmt.Function(name, parameters, body);
+        if (extension != null) {
+            Expr.Variable klass = new Expr.Variable(name);
+            return new Stmt.Function(extension, parameters, body, klass);
+        }
+        return new Stmt.Function(name, parameters, body, null);
     }
 
     private List<Stmt> block() {
