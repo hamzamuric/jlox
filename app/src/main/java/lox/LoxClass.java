@@ -15,12 +15,32 @@ public class LoxClass implements LoxCallable {
     }
 
     LoxFunction findMethod(String name) {
+        LoxFunction method = null;
+        LoxFunction inner = null;
+        LoxClass current = this;
+        while (current != null) {
+            if (current.methods.containsKey(name)) {
+                inner = method;
+                method = current.methods.get(name);
+            }
+            current = current.superclass;
+        }
+        if (inner == null) {
+            inner = new EmptyLoxFunction(method != null ? method.arity() : 0);
+        }
+        if (method != null) {
+            method.defineInner(inner);
+        }
+        return method;
+    }
+
+    LoxFunction findMethodUpwards(String name) {
         if (methods.containsKey(name)) {
             return methods.get(name);
         }
 
         if (superclass != null) {
-            return superclass.findMethod(name);
+            return superclass.findMethodUpwards(name);
         }
 
         return null;
@@ -29,7 +49,7 @@ public class LoxClass implements LoxCallable {
     @Override
     public Object call(Interpreter interpreter, List<Object> arguments) {
         LoxInstance instance = new LoxInstance(this);
-        LoxFunction initializer = findMethod("init");
+        LoxFunction initializer = findMethodUpwards("init");
         if (initializer != null) {
             initializer.bind(instance).call(interpreter, arguments);
         }
@@ -38,7 +58,7 @@ public class LoxClass implements LoxCallable {
 
     @Override
     public int arity() {
-        LoxFunction initializer = findMethod("init");
+        LoxFunction initializer = findMethodUpwards("init");
         if (initializer == null) return 0;
         return initializer.arity();
     }

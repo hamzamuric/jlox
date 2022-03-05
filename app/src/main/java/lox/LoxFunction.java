@@ -19,6 +19,10 @@ public class LoxFunction implements LoxCallable {
         return new LoxFunction(declaration, environment, isInitializer);
     }
 
+    public void defineInner(LoxFunction inner) {
+        clojure.define("inner", inner);
+    }
+
     @Override
     public int arity() {
         return declaration.params.size();
