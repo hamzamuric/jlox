@@ -26,6 +26,11 @@ class AstPrinter implements Expr.Visitor<String> {
     }
 
     @Override
+    public String visitNilGetExpr(Expr.NilGet expr) {
+        return "(?. " + expr.name.lexeme + " " + expr.object.accept(this) + ")";
+    }
+
+    @Override
     public String visitSetExpr(Expr.Set expr) {
         return "(= :" + expr.name.lexeme + " " + expr.object.accept(this) + expr.value.accept(this) + ")";
     }

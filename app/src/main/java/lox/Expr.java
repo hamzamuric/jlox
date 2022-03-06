@@ -8,6 +8,7 @@ abstract class Expr {
 		R visitBinaryExpr(Binary expr);
 		R visitCallExpr(Call expr);
 		R visitGetExpr(Get expr);
+		R visitNilGetExpr(NilGet expr);
 		R visitSetExpr(Set expr);
 		R visitThisExpr(This expr);
 		R visitSuperExpr(Super expr);
@@ -75,6 +76,20 @@ abstract class Expr {
 		@Override
 		<R> R accept(Visitor<R> visitor) {
 			return visitor.visitGetExpr(this);
+		}
+	}
+
+	static class NilGet extends Expr {
+		final Expr object;
+		final Token name;
+		NilGet(Expr object, Token name) {
+			this.object = object;
+			this.name = name;
+		}
+
+		@Override
+		<R> R accept(Visitor<R> visitor) {
+			return visitor.visitNilGetExpr(this);
 		}
 	}
 

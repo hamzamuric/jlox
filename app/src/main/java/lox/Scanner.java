@@ -76,6 +76,15 @@ class Scanner {
             case '>':
                 addToken(match('=') ? GREATER_EQUAL : GREATER);
                 break;
+            case '?':
+                if (match('.')) {
+                    addToken(QUESTION_DOT);
+                } else if (match(':')) {
+                    addToken(ELVIS);
+                } else {
+                    Lox.error(line, "Expected '.' or ':' after '?'");
+                }
+                break;
             case '/':
                 if (match('/')) {
                     // A comment goes until the end of the line.

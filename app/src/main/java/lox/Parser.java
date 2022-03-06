@@ -261,9 +261,21 @@ class Parser {
     }
 
     private Expr comparison() {
-        Expr expr = term();
+        Expr expr = elvis();
 
         while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
+            Token operator = previous();
+            Expr right = elvis();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr elvis() {
+        Expr expr = term();
+
+        while (match(ELVIS)) {
             Token operator = previous();
             Expr right = term();
             expr = new Expr.Binary(expr, operator, right);
@@ -331,6 +343,9 @@ class Parser {
             } else if (match(DOT)) {
                 Token name = consume(IDENTIFIER, "Expected property name after '.'.");
                 expr = new Expr.Get(expr, name);
+            } else if (match(QUESTION_DOT)) {
+                Token name = consume(IDENTIFIER, "Expected property name after '?.'.");
+                expr = new Expr.NilGet(expr, name);
             } else {
                 break;
             }
